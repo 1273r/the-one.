@@ -1,7 +1,6 @@
 package dev.mox.theone;
 
 import org.bukkit.Color;
-import org.bukkit.potion.PotionEffectType;
 
 public enum Stage {
     AWAKENING("AWAKENING", 0, 2, Color.fromRGB(245, 245, 255), 2, PotionEffectType.SPEED, 0),
@@ -25,17 +24,17 @@ public enum Stage {
     private final int nextThreshold;
     private final Color color;
     private final int rings;
-    private final PotionEffectType buff;
+    private final String buffKey;
     private final int amplifier;
 
     Stage(String displayName, int minimumKills, int nextThreshold, Color color,
-          int rings, PotionEffectType buff, int amplifier) {
+          int rings, String buffKey, int amplifier) {
         this.displayName = displayName;
         this.minimumKills = minimumKills;
         this.nextThreshold = nextThreshold;
         this.color = color;
         this.rings = rings;
-        this.buff = buff;
+        this.buffKey = buffKey;
         this.amplifier = amplifier;
     }
 
@@ -52,7 +51,17 @@ public enum Stage {
     public int nextThreshold() { return nextThreshold; }
     public Color color() { return color; }
     public int rings() { return rings; }
-    public PotionEffectType buff() { return buff; }
+    public String buffKey() { return buffKey; }
+
+    public org.bukkit.potion.PotionEffectType buff() {
+        if (buffKey == null) return null;
+        return switch (buffKey) {
+            case "speed" -> org.bukkit.potion.PotionEffectType.SPEED;
+            case "resistance" -> org.bukkit.potion.PotionEffectType.RESISTANCE;
+            case "strength" -> org.bukkit.potion.PotionEffectType.STRENGTH;
+            default -> null;
+        };
+    }
     public int amplifier() { return amplifier; }
 
     public Color ringColor(int ringIndex, int pointIndex, int pointCount) {
