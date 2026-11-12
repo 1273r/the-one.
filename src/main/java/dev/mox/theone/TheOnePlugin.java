@@ -152,6 +152,10 @@ public final class TheOnePlugin extends JavaPlugin implements Listener {
         }
     }
 
+    public void playAscension(Player player) {
+        auraEngine.playAscension(player);
+    }
+
     public void setKills(Player player, int kills) throws SQLException {
         store.setKills(player.getUniqueId(), kills);
         auraEngine.refreshBuffs(player);
