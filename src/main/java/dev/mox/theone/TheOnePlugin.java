@@ -190,7 +190,7 @@ public final class TheOnePlugin extends JavaPlugin implements Listener {
         for (Stage stage : Stage.values()) {
             if (stage.buff() == null) continue;
             PotionEffect effect = player.getPotionEffect(stage.buff());
-            if (effect != null && effect.getDuration() <= 120) player.removePotionEffect(stage.buff());
+            if (effect != null) player.removePotionEffect(stage.buff());
         }
     }
 }
