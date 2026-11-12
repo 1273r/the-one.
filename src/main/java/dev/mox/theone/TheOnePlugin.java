@@ -23,7 +23,8 @@ import java.util.UUID;
 public final class TheOnePlugin extends JavaPlugin implements Listener {
     private ProgressStore store;
     private AuraEngine auraEngine;
-    private WingsEngine wingsEngine;\n    private HaloAbilityEngine haloAbilityEngine;
+    private WingsEngine wingsEngine;
+    private HaloAbilityEngine haloAbilityEngine;
     private OneCommands commands;
     private UUID holder;
     private boolean effectsEnabled;
@@ -43,7 +44,8 @@ public final class TheOnePlugin extends JavaPlugin implements Listener {
         }
 
         auraEngine = new AuraEngine(this);
-        wingsEngine = new WingsEngine(this);\n        haloAbilityEngine = new HaloAbilityEngine(this);
+        wingsEngine = new WingsEngine(this);
+        haloAbilityEngine = new HaloAbilityEngine(this);
         commands = new OneCommands(this);
         registerCommand("one");
         registerCommand("makeone");
