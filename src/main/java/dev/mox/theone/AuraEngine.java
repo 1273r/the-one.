@@ -43,50 +43,14 @@ public final class AuraEngine {
         }
 
         if (!plugin.effectsEnabled()) return;
-        Location center = player.getLocation().clone().add(0, 0.08, 0);
+        Location center = player.getLocation().clone().add(0, 1.0, 0);
         particlesThisTick = 0;
 
-        particleBudget = clamp(plugin.getConfig().getInt("visual.max-particles-per-tick", 900), 100, 5000);
+        particleBudget = clamp(plugin.getConfig().getInt("visual.max-particles-per-tick", 1200), 200, 5000);
         int maxParticles = particleBudget;
-        int points = clamp(plugin.getConfig().getInt("visual.points-per-ring", 56), 16, 96);
-        double baseRadius = clamp(plugin.getConfig().getDouble("visual.base-radius", 0.95), 0.4, 2.0);
-        double radiusStep = clamp(plugin.getConfig().getDouble("visual.radius-per-ring", 0.145), 0.04, 0.35);
-        double heightStep = clamp(plugin.getConfig().getDouble("visual.height-spacing", 0.19), 0.08, 0.35);
-        float size = (float) clamp(plugin.getConfig().getDouble("visual.particle-size", 1.25), 0.5, 2.5);
-        double rotationSpeed = clamp(plugin.getConfig().getDouble("visual.rotation-speed", 0.045), 0.005, 0.2);
-        double tiltSpeed = clamp(plugin.getConfig().getDouble("visual.tilt-speed", 0.13), 0.01, 0.5);
-        double rotation = ticks * rotationSpeed;
+        double rotation = ticks * clamp(plugin.getConfig().getDouble("visual.rotation-speed", 0.032), 0.005, 0.2);
         Stage stage = getStage(player);
-
-        for (int ring = 0; ring < stage.rings() && particlesThisTick < maxParticles; ring++) {
-            double radius = baseRadius + ring * radiusStep;
-            double vertical = (ring - (stage.rings() - 1) / 2.0) * heightStep;
-            double tiltX = Math.sin(ticks * tiltSpeed * 0.06 + ring * 0.77) * (0.28 + ring * 0.018);
-            double tiltZ = Math.cos(ticks * tiltSpeed * 0.045 + ring * 0.61) * (0.20 + ring * 0.012);
-            double ringRotation = rotation * (ring % 2 == 0 ? 1.0 : -0.82) + ring * 0.47;
-
-            for (int point = 0; point < points && particlesThisTick < maxParticles; point++) {
-                double angle = (Math.PI * 2.0 * point / points) + ringRotation;
-                double x = Math.cos(angle) * radius;
-                double z = Math.sin(angle) * radius;
-                double y = 0;
-
-                // Rotate the ring plane in 3D; each ring has its own changing axis.
-                double rotatedY = y * Math.cos(tiltX) - z * Math.sin(tiltX);
-                double rotatedZ = y * Math.sin(tiltX) + z * Math.cos(tiltX);
-                double rotatedX = x * Math.cos(tiltZ) + rotatedZ * Math.sin(tiltZ);
-                rotatedZ = -x * Math.sin(tiltZ) + rotatedZ * Math.cos(tiltZ);
-
-                Location pointLocation = center.clone().add(rotatedX, vertical + rotatedY, rotatedZ);
-                Color color = stage.ringColor(ring, point, points);
-                dust(center.getWorld(), pointLocation, color, size);
-
-                if (plugin.getConfig().getBoolean("visual.ring-highlights", true)
-                        && point % 8 == 0 && particlesThisTick < maxParticles) {
-                    spawn(center.getWorld(), Particle.END_ROD, pointLocation.clone().add(0, 0.025, 0));
-                }
-            }
-        }
+        drawOrbitalCage(center, stage, rotation, maxParticles);
 
         if (plugin.getConfig().getBoolean("visual.inward-streams", true)) {
             drawInwardStreams(center, stage, rotation, maxParticles);
@@ -99,32 +63,94 @@ public final class AuraEngine {
         }
     }
 
+    /**
+     * Continuous, independently tilted orbital paths. Each orbit wraps the full
+     * player silhouette rather than stacking into a flat belt at the waist.
+     */
+    private void drawOrbitalCage(Location center, Stage stage, double rotation, int maxParticles) {
+        World world = center.getWorld();
+        int segments = stage == Stage.THE_ONE ? 56 : 44;
+        for (int ring = 0; ring < stage.rings() && particlesThisTick < maxParticles; ring++) {
+            double radius = 1.18 + ring * 0.145;
+            double tilt = 0.48 + (ring % 4) * 0.22;
+            double bank = (ring % 2 == 0 ? 1.0 : -1.0) * (0.28 + (ring % 3) * 0.19);
+            double phase = rotation * (ring % 2 == 0 ? 1.0 : -0.76) + ring * 0.71;
+            double heightScale = 0.88 + (ring % 3) * 0.12;
+            Color color = stage.ringColor(ring, 0, stage.rings());
+
+            Location previous = orbitPoint(center, radius, tilt, bank, phase, heightScale, 0);
+            for (int point = 1; point <= segments && particlesThisTick < maxParticles; point++) {
+                double angle = Math.PI * 2.0 * point / segments;
+                Location next = orbitPoint(center, radius, tilt, bank, phase, heightScale, angle);
+                world.spawnParticle(Particle.TRAIL, previous, 1, 0, 0, 0, 0,
+                        new Particle.Trail(next, color, 8));
+                particlesThisTick++;
+
+                // Small, deliberate glints travel along each orbit; avoid a dotted outline.
+                if (point % 11 == 0 && particlesThisTick < maxParticles) {
+                    spawn(world, Particle.END_ROD, next.clone().add(0, 0.025, 0));
+                }
+                previous = next;
+            }
+        }
+
+        // Four broad spiral currents connect the orbit cage to the player's core.
+        if (stage == Stage.THE_ONE) {
+            for (int stream = 0; stream < 4 && particlesThisTick < maxParticles; stream++) {
+                double angle = rotation * 1.55 + stream * Math.PI / 2.0;
+                double radius = 2.35 + Math.sin(ticks * 0.035 + stream) * 0.22;
+                double y = 0.25 + Math.sin(ticks * 0.027 + stream * 1.4) * 1.05;
+                Location from = center.clone().add(Math.cos(angle) * radius, y, Math.sin(angle) * radius);
+                Location to = center.clone().add(Math.cos(angle + 0.28) * (radius * 0.72),
+                        y * 0.58, Math.sin(angle + 0.28) * (radius * 0.72));
+                world.spawnParticle(Particle.TRAIL, from, 1, 0, 0, 0, 0,
+                        new Particle.Trail(to, stream % 2 == 0 ? Color.fromRGB(255, 210, 125)
+                                : Color.fromRGB(100, 225, 255), 9));
+                particlesThisTick++;
+            }
+        }
+    }
+
+    private Location orbitPoint(Location center, double radius, double tilt, double bank,
+                                double phase, double heightScale, double angle) {
+        double a = angle + phase;
+        double x = Math.cos(a) * radius;
+        double z = Math.sin(a) * radius;
+        double y = Math.sin(a * 2.0 + phase * 0.35) * 0.12;
+
+        // Rotate the orbit plane around two different axes for a true 3D cage.
+        double y1 = y * Math.cos(tilt) - z * Math.sin(tilt);
+        double z1 = y * Math.sin(tilt) + z * Math.cos(tilt);
+        double x2 = x * Math.cos(bank) + y1 * Math.sin(bank);
+        double y2 = -x * Math.sin(bank) + y1 * Math.cos(bank);
+        return center.clone().add(x2, y2 * heightScale, z1);
+    }
+
     private void drawInwardStreams(Location center, Stage stage, double rotation, int maxParticles) {
         World world = center.getWorld();
-        for (int stream = 0; stream < 4 && particlesThisTick < maxParticles; stream++) {
-            double angle = rotation * 1.8 + stream * Math.PI / 2.0;
-            double radius = 1.9 + Math.sin(ticks * 0.035 + stream) * 0.18;
-            double y = Math.sin(ticks * 0.025 + stream * 1.7) * 0.85;
-            Location trail = center.clone().add(Math.cos(angle) * radius, y, Math.sin(angle) * radius);
-            spawn(world, Particle.ELECTRIC_SPARK, trail);
-            if (particlesThisTick < maxParticles) {
-                Location inner = center.clone().add(Math.cos(angle + 0.16) * (radius * 0.68),
-                        y * 0.68, Math.sin(angle + 0.16) * (radius * 0.68));
-                dust(world, inner, stage.color(), 0.9f);
-            }
+        int count = stage == Stage.THE_ONE ? 8 : 4;
+        for (int stream = 0; stream < count && particlesThisTick < maxParticles; stream++) {
+            double angle = rotation * 1.8 + stream * (Math.PI * 2.0 / count);
+            double radius = 2.0 + Math.sin(ticks * 0.035 + stream) * 0.20;
+            double y = Math.sin(ticks * 0.025 + stream * 1.7) * 1.0;
+            Location from = center.clone().add(Math.cos(angle) * radius, y, Math.sin(angle) * radius);
+            Location to = center.clone().add(Math.cos(angle + 0.18) * 0.72, y * 0.32,
+                    Math.sin(angle + 0.18) * 0.72);
+            Color color = stage.ringColor(stream, stream, count);
+            world.spawnParticle(Particle.TRAIL, from, 1, 0, 0, 0, 0, new Particle.Trail(to, color, 10));
+            particlesThisTick++;
         }
     }
 
     private void drawCore(Location center, Stage stage, int maxParticles) {
         World world = center.getWorld();
         if (particlesThisTick < maxParticles) {
-            spawn(world, Particle.END_ROD, center.clone().add(0, 0.85 + Math.sin(ticks * 0.06) * 0.12, 0));
+            spawn(world, Particle.END_ROD, center.clone().add(0, 0.95 + Math.sin(ticks * 0.06) * 0.18, 0));
         }
-        if (particlesThisTick < maxParticles && ticks % 2 == 0) {
-            spawn(world, Particle.TOTEM_OF_UNDYING, center.clone().add(0, 0.15, 0));
+        if (particlesThisTick < maxParticles && ticks % 3 == 0) {
+            spawn(world, Particle.TOTEM_OF_UNDYING, center.clone().add(0, 0.25, 0));
         }
     }
-
 
     /**
      * Cinematic ascension built around Paper's client-rendered trail particles.
