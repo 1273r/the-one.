@@ -25,7 +25,7 @@ public final class HaloAbilityEngine {
     public HaloAbilityEngine(TheOnePlugin plugin) { this.plugin = plugin; }
 
     public void cast(Player caster, Stage stage) {
-        long now = caster.getWorld().getFullTime();
+        long now = System.currentTimeMillis() / 50L;
         long ready = cooldowns.getOrDefault(caster.getUniqueId(), 0L);
         if (now < ready) {
             long seconds = Math.max(1L, (ready - now + 19L) / 20L);
