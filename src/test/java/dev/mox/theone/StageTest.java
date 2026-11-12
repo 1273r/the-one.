@@ -3,6 +3,7 @@ package dev.mox.theone;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
 
 class StageTest {
     @Test
@@ -20,8 +21,8 @@ class StageTest {
 
     @Test
     void stagesWithoutListedBuffsDoNotInventOne() {
-        assertEquals(null, Stage.DIVINE.buff());
-        assertEquals(null, Stage.THE_ONE.buff());
+        assertNull(Stage.DIVINE.buff());
+        assertNull(Stage.THE_ONE.buff());
     }
 
     @Test
