@@ -74,7 +74,7 @@ The visuals are made from server-side particles and sounds. **A Paper plugin can
 
 ## Performance and testing
 
-The renderer only runs for the active online holder, uses a configurable particle ceiling, and skips rendering when visuals are disabled. Progression thresholds and ring counts have automated unit tests. Test first on a staging copy of your server, especially if you use other plugins that alter potion effects or player death handling.
+The renderer only runs for the active online holder, uses a configurable particle ceiling, and skips rendering when visuals are disabled. Progression thresholds, ring counts, stage buff rules, and SQLite persistence have automated unit tests. Test first on a staging copy of your server, especially if you use other plugins that alter potion effects or player death handling.
 
 ## Data and privacy
 
