@@ -21,8 +21,8 @@ class StageTest {
 
     @Test
     void stagesWithoutListedBuffsDoNotInventOne() {
-        assertNull(Stage.DIVINE.buff());
-        assertNull(Stage.THE_ONE.buff());
+        assertNull(Stage.DIVINE.buffKey());
+        assertNull(Stage.THE_ONE.buffKey());
     }
 
     @Test
