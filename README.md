@@ -83,6 +83,6 @@ The SQLite database stores player UUIDs, kill counts, and the current holder UUI
 
 ## Becoming THE ONE: ascension cinematic
 
-When an administrator assigns a new holder with `/makeone` or `/one set`, the player receives a one-time cinematic: an expanding particle shell, a brief camera impulse, six spiraling streams converging into the player, and a final visual detonation with sound. The detonation is cosmetic only: it does not create an explosion entity, damage entities, or alter blocks.
+When an administrator assigns a new holder with `/makeone` or `/one set`, the player receives a multi-phase cinematic built from Paper's client-rendered trail particles: a rotating three-layer seal, rising embers, six interwoven energy strands, eight converging streams, a layered spherical shockwave, and a slow three-ring afterglow. The palette is intentionally restrained (gold, ice-cyan, and white) rather than rainbow-colored. The brief camera impulse is limited to the impact frame. The detonation is cosmetic only: it does not create an explosion entity, damage entities, apply knockback, or alter blocks.
 
-Configure it under `transition` in `plugins/THE_ONE/config.yml`. Set `transition.screen-shake: false` to disable the temporary view rotation, or `transition.enabled: false` to disable the sequence.
+Admins can preview it at any time with `/one cinematic [player]` without changing the holder or progression. Configure it under `transition` in `plugins/THE_ONE/config.yml`. Set `transition.screen-shake: false` to disable the small impact impulse, or `transition.enabled: false` to disable the sequence.
