@@ -8,9 +8,9 @@ public enum Stage {
     WITNESS("WITNESS", 2, 5, Color.fromRGB(65, 235, 255), 3, PotionEffectType.RESISTANCE, 0),
     ASCENDED("ASCENDED", 5, 10, Color.fromRGB(65, 135, 255), 4, PotionEffectType.STRENGTH, 0),
     EXALTED("EXALTED", 10, 15, Color.fromRGB(175, 80, 255), 5, PotionEffectType.SPEED, 1),
-    DIVINE("DIVINE", 15, 20, Color.fromRGB(255, 105, 215), 6, PotionEffectType.RESISTANCE, 1),
+    DIVINE("DIVINE", 15, 20, Color.fromRGB(255, 105, 215), 6, null, -1),
     UNBOUND("UNBOUND", 20, 30, Color.fromRGB(255, 55, 70), 8, PotionEffectType.STRENGTH, 1),
-    THE_ONE("THE ONE", 30, Integer.MAX_VALUE, Color.fromRGB(255, 205, 105), 10, PotionEffectType.STRENGTH, 1);
+    THE_ONE("THE ONE", 30, Integer.MAX_VALUE, Color.fromRGB(255, 205, 105), 10, null, -1);
 
     private static final Color[] ONE_PALETTE = {
             Color.fromRGB(255, 205, 105),
