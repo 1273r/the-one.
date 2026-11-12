@@ -19,6 +19,12 @@ class StageTest {
     }
 
     @Test
+    void stagesWithoutListedBuffsDoNotInventOne() {
+        assertEquals(null, Stage.DIVINE.buff());
+        assertEquals(null, Stage.THE_ONE.buff());
+    }
+
+    @Test
     void ringCountsMatchTheOriginalDesign() {
         assertEquals(2, Stage.AWAKENING.rings());
         assertEquals(3, Stage.WITNESS.rings());
