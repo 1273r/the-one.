@@ -1,5 +1,7 @@
 package dev.mox.theone;
 
+import net.kyori.adventure.text.Component;
+import net.kyori.adventure.text.format.NamedTextColor;
 import org.bukkit.Color;
 import org.bukkit.Location;
 import org.bukkit.Particle;
@@ -7,13 +9,11 @@ import org.bukkit.World;
 import org.bukkit.entity.Player;
 import org.bukkit.potion.PotionEffect;
 
-import java.util.HashMap;
-import java.util.Map;
 import java.util.UUID;
 
 public final class AuraEngine {
     private final TheOnePlugin plugin;
-    private final Map<UUID, Location> lastLocations = new HashMap<>();
+    private int particleBudget = 900;
     private long ticks;
     private int particlesThisTick;
 
@@ -36,10 +36,10 @@ public final class AuraEngine {
 
         if (!plugin.effectsEnabled()) return;
         Location center = player.getLocation().clone().add(0, 0.08, 0);
-        lastLocations.put(holderId, center.clone());
         particlesThisTick = 0;
 
-        int maxParticles = Math.max(100, plugin.getConfig().getInt("visual.max-particles-per-tick", 900));
+        particleBudget = clamp(plugin.getConfig().getInt("visual.max-particles-per-tick", 900), 100, 5000);
+        int maxParticles = particleBudget;
         int points = clamp(plugin.getConfig().getInt("visual.points-per-ring", 56), 16, 96);
         double baseRadius = clamp(plugin.getConfig().getDouble("visual.base-radius", 0.95), 0.4, 2.0);
         double radiusStep = clamp(plugin.getConfig().getDouble("visual.radius-per-ring", 0.145), 0.04, 0.35);
@@ -53,8 +53,8 @@ public final class AuraEngine {
         for (int ring = 0; ring < stage.rings() && particlesThisTick < maxParticles; ring++) {
             double radius = baseRadius + ring * radiusStep;
             double vertical = (ring - (stage.rings() - 1) / 2.0) * heightStep;
-            double tiltX = Math.sin(ticks * 0.008 + ring * 0.77) * (0.28 + ring * 0.018);
-            double tiltZ = Math.cos(ticks * 0.006 + ring * 0.61) * (0.20 + ring * 0.012);
+            double tiltX = Math.sin(ticks * tiltSpeed * 0.06 + ring * 0.77) * (0.28 + ring * 0.018);
+            double tiltZ = Math.cos(ticks * tiltSpeed * 0.045 + ring * 0.61) * (0.20 + ring * 0.012);
             double ringRotation = rotation * (ring % 2 == 0 ? 1.0 : -0.82) + ring * 0.47;
 
             for (int point = 0; point < points && particlesThisTick < maxParticles; point++) {
@@ -121,6 +121,7 @@ public final class AuraEngine {
         if (!plugin.getConfig().getBoolean("progression.buffs.enabled", true)) return;
         try {
             Stage stage = Stage.fromKills(plugin.getKills(player.getUniqueId()));
+            if (stage.buff() == null) return;
             int duration = Math.max(40, plugin.getConfig().getInt("progression.buffs.duration-ticks", 100));
             player.addPotionEffect(new PotionEffect(stage.buff(), duration, stage.amplifier(), true, false, false));
         } catch (Exception exception) {
@@ -163,11 +164,11 @@ public final class AuraEngine {
     }
 
     public void forget(UUID uuid) {
-        lastLocations.remove(uuid);
+        // The renderer derives its anchor directly from the holder's live location.
     }
 
     public void clearAll() {
-        lastLocations.clear();
+        // No persistent particle entities are created; Bukkit clears the visual stream naturally.
     }
 
     private static int clamp(int value, int min, int max) {
