@@ -32,7 +32,7 @@ public final class OneCommands implements CommandExecutor, TabCompleter {
         if (!hasAdmin(sender)) return noPermission(sender);
 
         if (args.length == 0) {
-            sender.sendMessage(Component.text("/one set <player> | remove | kills <amount> [player] | reset <player> | info [player] | reload | effects | cinematic [player]",
+            sender.sendMessage(Component.text("/one set <player> | remove | kills <amount> [player] | reset <player> | info [player] | reload | particles | wings | cinematic [player]",
                     NamedTextColor.AQUA));
             return true;
         }
@@ -57,13 +57,13 @@ public final class OneCommands implements CommandExecutor, TabCompleter {
                 plugin.playAscension(target);
                 sender.sendMessage(Component.text("Played THE ONE ascension cinematic for " + target.getName() + ".", NamedTextColor.GREEN));
             }
-            case "effects" -> {
+            case "particles", "effects" -> {
                 plugin.toggleEffects();
-                sender.sendMessage(Component.text("Orbital effects " +
+                sender.sendMessage(Component.text("Progression particles " +
                         (plugin.effectsEnabled() ? "enabled." : "disabled."),
                         plugin.effectsEnabled() ? NamedTextColor.GREEN : NamedTextColor.YELLOW));
             }
-            default -> sender.sendMessage(Component.text("Unknown subcommand. Use /one for help.", NamedTextColor.RED));
+            case "wings" -> {\n                boolean enabled = plugin.toggleWings();\n                sender.sendMessage(Component.text("THE ONE wings " + (enabled ? "enabled." : "disabled."),\n                        enabled ? NamedTextColor.GREEN : NamedTextColor.YELLOW));\n            }\n            default -> sender.sendMessage(Component.text("Unknown subcommand. Use /one for help.", NamedTextColor.RED));
         }
         return true;
     }
@@ -245,7 +245,7 @@ public final class OneCommands implements CommandExecutor, TabCompleter {
     public List<String> onTabComplete(CommandSender sender, Command command, String alias, String[] args) {
         List<String> suggestions = new ArrayList<>();
         if (args.length == 1 && command.getName().equalsIgnoreCase("one")) {
-            suggestions.addAll(List.of("set", "remove", "kills", "reset", "info", "reload", "effects", "cinematic"));
+            suggestions.addAll(List.of("set", "remove", "kills", "reset", "info", "reload", "particles", "effects", "wings", "cinematic"));
         } else if (args.length == 1 && (command.getName().equalsIgnoreCase("makeone")
                 || command.getName().equalsIgnoreCase("oneinfo"))) {
             Bukkit.getOnlinePlayers().forEach(player -> suggestions.add(player.getName()));

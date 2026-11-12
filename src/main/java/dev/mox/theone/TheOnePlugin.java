@@ -52,8 +52,8 @@ public final class TheOnePlugin extends JavaPlugin implements Listener {
         registerCommand("oneinfo");
         registerCommand("progress");
         getServer().getPluginManager().registerEvents(this, this);
-        Bukkit.getScheduler().runTaskTimer(this, auraEngine::tick, 1L, 3L);
-        Bukkit.getScheduler().runTaskTimer(this, wingsEngine::tick, 2L, 3L);
+        Bukkit.getScheduler().runTaskTimer(this, auraEngine::tick, 1L, 1L);
+        Bukkit.getScheduler().runTaskTimer(this, wingsEngine::tick, 1L, 1L);
 
         if (holder != null) {
             Player current = Bukkit.getPlayer(holder);

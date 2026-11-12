@@ -21,7 +21,7 @@ visual:
   action-bar: true
   stage-title: true
   # Safety ceiling. The engine also scales ring detail with the active stage.
-  max-particles-per-tick: 900
+  max-particles-per-tick: 420
 
 progression:
   buffs:

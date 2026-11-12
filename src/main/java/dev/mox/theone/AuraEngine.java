@@ -30,7 +30,7 @@ public final class AuraEngine {
     }
 
     public void tick() {
-        ticks += 3;
+        ticks++;
         UUID holderId = plugin.getHolder();
         if (holderId == null) return;
 
@@ -43,20 +43,16 @@ public final class AuraEngine {
         }
 
         if (!plugin.effectsEnabled()) return;
-        Location center = player.getLocation().clone().add(0, 1.0, 0);
+        Location head = player.getLocation().clone().add(0, 2.18, 0);
+        World world = head.getWorld();
+        if (world == null) return;
         particlesThisTick = 0;
+        particleBudget = clamp(plugin.getConfig().getInt("visual.max-particles-per-tick", 420), 80, 1600);
 
-        particleBudget = clamp(plugin.getConfig().getInt("visual.max-particles-per-tick", 1200), 200, 5000);
-        int maxParticles = particleBudget;
-        double rotation = ticks * clamp(plugin.getConfig().getDouble("visual.rotation-speed", 0.032), 0.005, 0.2);
         Stage stage = getStage(player);
-        drawOrbitalCage(center, stage, rotation, maxParticles);
-
-        if (plugin.getConfig().getBoolean("visual.inward-streams", true)) {
-            drawInwardStreams(center, stage, rotation, maxParticles);
-        }
-        if (plugin.getConfig().getBoolean("visual.core-particles", true)) {
-            drawCore(center, stage, maxParticles);
+        drawHalos(head, stage);
+        if (plugin.getConfig().getBoolean("visual.core-particles", false)) {
+            spawn(world, Particle.END_ROD, head.clone().add(0, -0.72, 0));
         }
         if (plugin.getConfig().getBoolean("visual.action-bar", true) && ticks % 12 == 0) {
             sendProgressBar(player, stage);
@@ -64,91 +60,48 @@ public final class AuraEngine {
     }
 
     /**
-     * Continuous, independently tilted orbital paths. Each orbit wraps the full
-     * player silhouette rather than stacking into a flat belt at the waist.
+     * Floating crown halos. These are centered above the head, never wrapped
+     * around the player's body. Individual dust points are emitted at the
+     * holder's live position each tick; no long-lived TRAIL particles are used.
      */
-    private void drawOrbitalCage(Location center, Stage stage, double rotation, int maxParticles) {
-        World world = center.getWorld();
-        int segments = stage == Stage.THE_ONE ? 56 : 44;
-        for (int ring = 0; ring < stage.rings() && particlesThisTick < maxParticles; ring++) {
-            double radius = 1.18 + ring * 0.145;
-            double tilt = 0.48 + (ring % 4) * 0.22;
-            double bank = (ring % 2 == 0 ? 1.0 : -1.0) * (0.28 + (ring % 3) * 0.19);
-            double phase = rotation * (ring % 2 == 0 ? 1.0 : -0.76) + ring * 0.71;
-            double heightScale = 0.88 + (ring % 3) * 0.12;
-            Color color = stage.ringColor(ring, 0, stage.rings());
-
-            Location previous = orbitPoint(center, radius, tilt, bank, phase, heightScale, 0);
-            for (int point = 1; point <= segments && particlesThisTick < maxParticles; point++) {
-                double angle = Math.PI * 2.0 * point / segments;
-                Location next = orbitPoint(center, radius, tilt, bank, phase, heightScale, angle);
-                world.spawnParticle(Particle.TRAIL, previous, 1, 0, 0, 0, 0,
-                        new Particle.Trail(next, color, 8));
-                particlesThisTick++;
-
-                // Small, deliberate glints travel along each orbit; avoid a dotted outline.
-                if (point % 11 == 0 && particlesThisTick < maxParticles) {
-                    spawn(world, Particle.END_ROD, next.clone().add(0, 0.025, 0));
+    private void drawHalos(Location head, Stage stage) {
+        World world = head.getWorld();
+        int layers = switch (stage) {
+            case AWAKENING -> 1;
+            case WITNESS, ASCENDED -> 2;
+            case EXALTED, DIVINE -> 3;
+            case UNBOUND, THE_ONE -> 3;
+        };
+        double time = ticks * 0.025;
+        for (int layer = 0; layer < layers && particlesThisTick < particleBudget; layer++) {
+            double radius = 0.62 + layer * 0.19;
+            double height = layer * 0.22;
+            double tilt = layer == 0 ? 0.08 : (layer == 1 ? 0.20 : -0.17);
+            double phase = time * (layer % 2 == 0 ? 1.0 : -0.72) + layer * 0.85;
+            int points = stage == Stage.THE_ONE ? 48 : 36;
+            for (int point = 0; point < points && particlesThisTick < particleBudget; point++) {
+                double angle = Math.PI * 2.0 * point / points + phase;
+                double x = Math.cos(angle) * radius;
+                double z = Math.sin(angle) * radius;
+                double y = height + Math.sin(angle) * tilt;
+                Location at = head.clone().add(x, y, z);
+                Color color = stage.ringColor(layer, point, points);
+                dust(world, at, color, stage == Stage.THE_ONE ? 1.65f : 1.35f);
+                if (point % 12 == 0 && particlesThisTick < particleBudget) {
+                    spawn(world, Particle.END_ROD, at.clone().add(0, 0.025, 0));
                 }
-                previous = next;
             }
         }
 
-        // Four broad spiral currents connect the orbit cage to the player's core.
+        // At the final stage, a small four-point crown floats inside the halos.
         if (stage == Stage.THE_ONE) {
-            for (int stream = 0; stream < 4 && particlesThisTick < maxParticles; stream++) {
-                double angle = rotation * 1.55 + stream * Math.PI / 2.0;
-                double radius = 2.35 + Math.sin(ticks * 0.035 + stream) * 0.22;
-                double y = 0.25 + Math.sin(ticks * 0.027 + stream * 1.4) * 1.05;
-                Location from = center.clone().add(Math.cos(angle) * radius, y, Math.sin(angle) * radius);
-                Location to = center.clone().add(Math.cos(angle + 0.28) * (radius * 0.72),
-                        y * 0.58, Math.sin(angle + 0.28) * (radius * 0.72));
-                world.spawnParticle(Particle.TRAIL, from, 1, 0, 0, 0, 0,
-                        new Particle.Trail(to, stream % 2 == 0 ? Color.fromRGB(255, 210, 125)
-                                : Color.fromRGB(100, 225, 255), 9));
-                particlesThisTick++;
+            for (int i = 0; i < 4 && particlesThisTick < particleBudget; i++) {
+                double angle = time * -1.4 + i * Math.PI / 2.0;
+                Location star = head.clone().add(Math.cos(angle) * 0.30, 0.30,
+                        Math.sin(angle) * 0.30);
+                dust(world, star, i % 2 == 0 ? Color.fromRGB(255, 225, 150)
+                        : Color.fromRGB(190, 245, 255), 1.9f);
             }
-        }
-    }
-
-    private Location orbitPoint(Location center, double radius, double tilt, double bank,
-                                double phase, double heightScale, double angle) {
-        double a = angle + phase;
-        double x = Math.cos(a) * radius;
-        double z = Math.sin(a) * radius;
-        double y = Math.sin(a * 2.0 + phase * 0.35) * 0.12;
-
-        // Rotate the orbit plane around two different axes for a true 3D cage.
-        double y1 = y * Math.cos(tilt) - z * Math.sin(tilt);
-        double z1 = y * Math.sin(tilt) + z * Math.cos(tilt);
-        double x2 = x * Math.cos(bank) + y1 * Math.sin(bank);
-        double y2 = -x * Math.sin(bank) + y1 * Math.cos(bank);
-        return center.clone().add(x2, y2 * heightScale, z1);
-    }
-
-    private void drawInwardStreams(Location center, Stage stage, double rotation, int maxParticles) {
-        World world = center.getWorld();
-        int count = stage == Stage.THE_ONE ? 8 : 4;
-        for (int stream = 0; stream < count && particlesThisTick < maxParticles; stream++) {
-            double angle = rotation * 1.8 + stream * (Math.PI * 2.0 / count);
-            double radius = 2.0 + Math.sin(ticks * 0.035 + stream) * 0.20;
-            double y = Math.sin(ticks * 0.025 + stream * 1.7) * 1.0;
-            Location from = center.clone().add(Math.cos(angle) * radius, y, Math.sin(angle) * radius);
-            Location to = center.clone().add(Math.cos(angle + 0.18) * 0.72, y * 0.32,
-                    Math.sin(angle + 0.18) * 0.72);
-            Color color = stage.ringColor(stream, stream, count);
-            world.spawnParticle(Particle.TRAIL, from, 1, 0, 0, 0, 0, new Particle.Trail(to, color, 10));
-            particlesThisTick++;
-        }
-    }
-
-    private void drawCore(Location center, Stage stage, int maxParticles) {
-        World world = center.getWorld();
-        if (particlesThisTick < maxParticles) {
-            spawn(world, Particle.END_ROD, center.clone().add(0, 0.95 + Math.sin(ticks * 0.06) * 0.18, 0));
-        }
-        if (particlesThisTick < maxParticles && ticks % 3 == 0) {
-            spawn(world, Particle.TOTEM_OF_UNDYING, center.clone().add(0, 0.25, 0));
         }
     }
 
