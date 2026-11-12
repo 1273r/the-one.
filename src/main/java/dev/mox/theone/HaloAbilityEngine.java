@@ -14,6 +14,8 @@ import org.bukkit.util.Vector;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.HashSet;
+import java.util.Set;
 import java.util.UUID;
 
 /** Stage-scaled, cooldown-gated thrown halo ability. */
@@ -21,6 +23,9 @@ public final class HaloAbilityEngine {
     private static final long COOLDOWN_TICKS = 240L;
     private final TheOnePlugin plugin;
     private final Map<UUID, Long> cooldowns = new HashMap<>();
+    private final Set<UUID> inFlight = new HashSet<>();
+
+    public boolean isInFlight(UUID playerId) { return inFlight.contains(playerId); }
 
     public HaloAbilityEngine(TheOnePlugin plugin) { this.plugin = plugin; }
 
@@ -33,6 +38,7 @@ public final class HaloAbilityEngine {
             return;
         }
         cooldowns.put(caster.getUniqueId(), now + COOLDOWN_TICKS);
+        inFlight.add(caster.getUniqueId());
         launch(caster, stage);
     }
 
@@ -50,6 +56,7 @@ public final class HaloAbilityEngine {
             if (!caster.isOnline() || caster.isDead() || !position.getWorld().equals(caster.getWorld())
                     || age[0]++ >= 36) {
                 task[0].cancel();
+                inFlight.remove(caster.getUniqueId());
                 return;
             }
             position.add(direction.clone().multiply(1.22));
@@ -60,6 +67,7 @@ public final class HaloAbilityEngine {
                 if (target.getLocation().distanceSquared(position) > 1.15) continue;
                 impact(caster, target, stage, position, primary);
                 task[0].cancel();
+                inFlight.remove(caster.getUniqueId());
                 return;
             }
         }, 0L, 1L);

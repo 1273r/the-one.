@@ -185,6 +185,10 @@ public final class TheOnePlugin extends JavaPlugin implements Listener {
         }
     }
 
+    public boolean isHaloInFlight(UUID playerId) {
+        return haloAbilityEngine != null && haloAbilityEngine.isInFlight(playerId);
+    }
+
     public void castAbility(Player player) {
         if (!isHolder(player)) {
             player.sendMessage(Component.text("Only THE ONE can wield the halo.", NamedTextColor.RED));

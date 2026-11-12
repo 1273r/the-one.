@@ -50,7 +50,7 @@ public final class AuraEngine {
         particleBudget = clamp(plugin.getConfig().getInt("visual.max-particles-per-tick", 420), 80, 1600);
 
         Stage stage = getStage(player);
-        drawHalos(head, stage);
+        if (!plugin.isHaloInFlight(player.getUniqueId())) drawHalos(head, stage);
         if (plugin.getConfig().getBoolean("visual.core-particles", false)) {
             spawn(world, Particle.END_ROD, head.clone().add(0, -0.72, 0));
         }
@@ -60,30 +60,30 @@ public final class AuraEngine {
     }
 
     /**
-     * Floating crown halos. These are centered above the head, never wrapped
-     * around the player's body. Individual dust points are emitted at the
-     * holder's live position each tick; no long-lived TRAIL particles are used.
+     * Compact crown halo. Electric sparks are intentionally used instead of
+     * dust: dust has a long client lifetime and leaves a visible ghost trail
+     * whenever the holder moves. The crown is also hidden while its halo is
+     * travelling as the ability projectile.
      */
     private void drawHalos(Location head, Stage stage) {
         World world = head.getWorld();
         double radius = 0.59;
-        double time = ticks * 0.018;
+        double time = ticks * 0.035;
         double yaw = Math.toRadians(head.getYaw());
         double cos = Math.cos(yaw), sin = Math.sin(yaw);
-        int points = 64;
+        int points = 28;
         for (int i = 0; i < points && particlesThisTick < particleBudget; i++) {
-            double angle = Math.PI * 2.0 * i / points;
+            double angle = Math.PI * 2.0 * i / points + time;
             double x = Math.cos(angle) * radius;
             double z = Math.sin(angle) * radius;
             double rx = x * cos - z * sin;
             double rz = x * sin + z * cos;
-            Location at = head.clone().add(rx, 0.12 + Math.sin(angle * 2.0 + time) * 0.018, rz);
-            Color color = stage == Stage.THE_ONE ? stage.ringColor(0, i, points) : stage.color();
-            dust(world, at, color, stage == Stage.THE_ONE ? 1.45f : 1.25f);
+            Location at = head.clone().add(rx, 0.12, rz);
+            spawn(world, Particle.ELECTRIC_SPARK, at);
         }
         if (stage.ordinal() >= Stage.DIVINE.ordinal()) {
             for (int i = 0; i < 4 && particlesThisTick < particleBudget; i++) {
-                double angle = time * 1.4 + i * Math.PI / 2.0;
+                double angle = -time * 1.7 + i * Math.PI / 2.0;
                 Location glint = head.clone().add(Math.cos(angle) * radius, 0.12,
                         Math.sin(angle) * radius);
                 spawn(world, Particle.END_ROD, glint);
