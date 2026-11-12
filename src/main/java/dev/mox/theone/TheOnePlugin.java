@@ -134,6 +134,7 @@ public final class TheOnePlugin extends JavaPlugin implements Listener {
     }
 
     public void setHolder(Player player) throws SQLException {
+        UUID previousHolder = holder;
         if (holder != null) {
             Player previous = Bukkit.getPlayer(holder);
             if (previous != null) removeManagedBuffs(previous);
@@ -142,6 +143,9 @@ public final class TheOnePlugin extends JavaPlugin implements Listener {
         store.setHolder(holder);
         if (player != null) {
             auraEngine.refreshBuffs(player);
+            if (!player.getUniqueId().equals(previousHolder)) {
+                auraEngine.playAscension(player);
+            }
             player.sendMessage(Component.text("You are now ", NamedTextColor.GRAY)
                     .append(Component.text("THE ONE.", NamedTextColor.GOLD)));
             player.playSound(player.getLocation(), Sound.BLOCK_BEACON_POWER_SELECT, 1.0f, 1.0f);
