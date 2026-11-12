@@ -15,6 +15,7 @@ public final class AuraEngine {
     private final TheOnePlugin plugin;
     private int particleBudget = 900;
     private long ticks;
+    private long nextBuffRefreshTick;
     private int particlesThisTick;
 
     public AuraEngine(TheOnePlugin plugin) {
@@ -29,9 +30,9 @@ public final class AuraEngine {
         Player player = plugin.getServer().getPlayer(holderId);
         if (player == null || !player.isOnline() || player.isDead()) return;
 
-        if (plugin.getConfig().getBoolean("progression.buffs.enabled", true)
-                && ticks % Math.max(6, plugin.getConfig().getInt("progression.buffs.refresh-ticks", 40)) < 3) {
+        if (plugin.getConfig().getBoolean("progression.buffs.enabled", true) && ticks >= nextBuffRefreshTick) {
             refreshBuffs(player);
+            nextBuffRefreshTick = ticks + Math.max(6, plugin.getConfig().getInt("progression.buffs.refresh-ticks", 40));
         }
 
         if (!plugin.effectsEnabled()) return;
@@ -142,16 +143,17 @@ public final class AuraEngine {
             int kills = plugin.getKills(player.getUniqueId());
             int percent = stage.progressPercent(kills);
             int filled = percent / 10;
-            String bar = "§b" + "▰".repeat(filled) + "§8" + "▱".repeat(10 - filled);
-            String suffix = stage == Stage.THE_ONE ? "§6MAX EVOLUTION" : "§7" + kills + " / " + stage.nextThreshold();
-            player.sendActionBar("§f" + stage.displayName() + "  " + bar + "  " + suffix);
+            String bar = "▰".repeat(filled) + "▱".repeat(10 - filled);
+            String suffix = stage == Stage.THE_ONE ? "MAX EVOLUTION" : kills + " / " + stage.nextThreshold();
+            player.sendActionBar(Component.text(stage.displayName() + "  " + bar + "  " + suffix,
+                    NamedTextColor.WHITE));
         } catch (Exception ignored) {
             // A transient database read should not break the visual scheduler.
         }
     }
 
     private void dust(World world, Location location, Color color, float size) {
-        if (particlesThisTick >= plugin.getConfig().getInt("visual.max-particles-per-tick", 900)) return;
+        if (particlesThisTick >= particleBudget) return;
         world.spawnParticle(Particle.DUST, location, 1, 0, 0, 0, 0,
                 new Particle.DustOptions(color, size));
         particlesThisTick++;
