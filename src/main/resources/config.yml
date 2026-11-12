@@ -39,4 +39,5 @@ audio:
 transition:
   enabled: true
   screen-shake: true
-  max-particles-per-tick: 850
+  # Trail particles form continuous geometry; this is a hard per-tick safety ceiling.
+  max-particles-per-tick: 1600
