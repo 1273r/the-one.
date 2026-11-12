@@ -18,15 +18,12 @@ visual:
   inward-streams: true
   ring-highlights: true
   core-particles: true
-  max-render-distance: 48.0
   action-bar: true
   stage-title: true
   # Safety ceiling. The engine also scales ring detail with the active stage.
   max-particles-per-tick: 900
 
 progression:
-  # Kill thresholds for each evolution. Do not change order.
-  thresholds: [0, 2, 5, 10, 15, 20, 30]
   buffs:
     enabled: true
     refresh-ticks: 40
@@ -35,17 +32,4 @@ progression:
 audio:
   enabled: true
   progression-volume: 0.8
-  ambient-volume: 0.25
 
-messages:
-  prefix: '<gradient:#f8f3ff:#55eaff><bold>THE ONE</bold></gradient> <dark_gray>»</dark_gray> '
-  no-permission: '<red>You do not have permission to do that.'
-  player-only: '<red>This command can only be used by a player.'
-  invalid-player: '<red>That player is not online.'
-  assigned: '<aqua>%player% <gray>has become <gold>THE ONE<gray>.'
-  removed: '<gray>The current holder has been removed.'
-  kills-set: '<gray>Progression set to <white>%kills%</white> kills.'
-  reset: '<gray>Progression reset for <white>%player%</white>.'
-  reloaded: '<green>Configuration reloaded.'
-  effects-on: '<green>Orbital effects enabled.'
-  effects-off: '<yellow>Orbital effects disabled.'
