@@ -40,6 +40,7 @@ test {
 }
 
 shadowJar {
+    mergeServiceFiles()
     archiveClassifier = ''
     relocate 'org.sqlite', 'dev.mox.theone.lib.sqlite'
 }
