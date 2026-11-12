@@ -3,13 +3,13 @@ version: 1.0.0
 main: dev.mox.theone.TheOnePlugin
 api-version: '1.21.11'
 authors: [1273r]
-description: Persistent seven-stage evolution with a dynamic 3D orbital aura.
+description: Persistent seven-stage evolution with a dynamic crown halo and wings.
 website: https://github.com/1273r/the-one.
 
 commands:
   one:
     description: Manage THE ONE progression and visual effects.
-    usage: /one <set|remove|kills|reset|info|reload|effects>
+    usage: /one <set|remove|kills|reset|info|reload|particles|wings|ability1>
     aliases: [theone]
   makeone:
     description: Assign THE ONE to a player.

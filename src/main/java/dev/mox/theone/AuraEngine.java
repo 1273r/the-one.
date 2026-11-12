@@ -66,41 +66,27 @@ public final class AuraEngine {
      */
     private void drawHalos(Location head, Stage stage) {
         World world = head.getWorld();
-        int layers = switch (stage) {
-            case AWAKENING -> 1;
-            case WITNESS, ASCENDED -> 2;
-            case EXALTED, DIVINE -> 3;
-            case UNBOUND, THE_ONE -> 3;
-        };
-        double time = ticks * 0.025;
-        for (int layer = 0; layer < layers && particlesThisTick < particleBudget; layer++) {
-            double radius = 0.62 + layer * 0.19;
-            double height = layer * 0.22;
-            double tilt = layer == 0 ? 0.08 : (layer == 1 ? 0.20 : -0.17);
-            double phase = time * (layer % 2 == 0 ? 1.0 : -0.72) + layer * 0.85;
-            int points = stage == Stage.THE_ONE ? 48 : 36;
-            for (int point = 0; point < points && particlesThisTick < particleBudget; point++) {
-                double angle = Math.PI * 2.0 * point / points + phase;
-                double x = Math.cos(angle) * radius;
-                double z = Math.sin(angle) * radius;
-                double y = height + Math.sin(angle) * tilt;
-                Location at = head.clone().add(x, y, z);
-                Color color = stage.ringColor(layer, point, points);
-                dust(world, at, color, stage == Stage.THE_ONE ? 1.65f : 1.35f);
-                if (point % 12 == 0 && particlesThisTick < particleBudget) {
-                    spawn(world, Particle.END_ROD, at.clone().add(0, 0.025, 0));
-                }
-            }
+        double radius = 0.59;
+        double time = ticks * 0.018;
+        double yaw = Math.toRadians(head.getYaw());
+        double cos = Math.cos(yaw), sin = Math.sin(yaw);
+        int points = 64;
+        for (int i = 0; i < points && particlesThisTick < particleBudget; i++) {
+            double angle = Math.PI * 2.0 * i / points;
+            double x = Math.cos(angle) * radius;
+            double z = Math.sin(angle) * radius;
+            double rx = x * cos - z * sin;
+            double rz = x * sin + z * cos;
+            Location at = head.clone().add(rx, 0.12 + Math.sin(angle * 2.0 + time) * 0.018, rz);
+            Color color = stage == Stage.THE_ONE ? stage.ringColor(0, i, points) : stage.color();
+            dust(world, at, color, stage == Stage.THE_ONE ? 1.45f : 1.25f);
         }
-
-        // At the final stage, a small four-point crown floats inside the halos.
-        if (stage == Stage.THE_ONE) {
+        if (stage.ordinal() >= Stage.DIVINE.ordinal()) {
             for (int i = 0; i < 4 && particlesThisTick < particleBudget; i++) {
-                double angle = time * -1.4 + i * Math.PI / 2.0;
-                Location star = head.clone().add(Math.cos(angle) * 0.30, 0.30,
-                        Math.sin(angle) * 0.30);
-                dust(world, star, i % 2 == 0 ? Color.fromRGB(255, 225, 150)
-                        : Color.fromRGB(190, 245, 255), 1.9f);
+                double angle = time * 1.4 + i * Math.PI / 2.0;
+                Location glint = head.clone().add(Math.cos(angle) * radius, 0.12,
+                        Math.sin(angle) * radius);
+                spawn(world, Particle.END_ROD, glint);
             }
         }
     }

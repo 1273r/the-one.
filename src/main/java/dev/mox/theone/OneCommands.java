@@ -29,10 +29,18 @@ public final class OneCommands implements CommandExecutor, TabCompleter {
         if (name.equals("forceprog")) return forceProgress(sender, args);
         if (name.equals("oneinfo")) return info(sender, args);
         if (name.equals("progress")) return progress(sender);
+        if (args.length > 0 && args[0].equalsIgnoreCase("ability1")) {
+            if (!(sender instanceof Player player)) {
+                sender.sendMessage(Component.text("This ability can only be used in-game.", NamedTextColor.RED));
+                return true;
+            }
+            plugin.castAbility(player);
+            return true;
+        }
         if (!hasAdmin(sender)) return noPermission(sender);
 
         if (args.length == 0) {
-            sender.sendMessage(Component.text("/one set <player> | remove | kills <amount> [player] | reset <player> | info [player] | reload | particles | wings | cinematic [player]",
+            sender.sendMessage(Component.text("/one set <player> | remove | kills <amount> [player] | reset <player> | info [player] | reload | particles | wings | ability1 | cinematic [player]",
                     NamedTextColor.AQUA));
             return true;
         }
@@ -250,7 +258,7 @@ public final class OneCommands implements CommandExecutor, TabCompleter {
     public List<String> onTabComplete(CommandSender sender, Command command, String alias, String[] args) {
         List<String> suggestions = new ArrayList<>();
         if (args.length == 1 && command.getName().equalsIgnoreCase("one")) {
-            suggestions.addAll(List.of("set", "remove", "kills", "reset", "info", "reload", "particles", "effects", "wings", "cinematic"));
+            suggestions.addAll(List.of("set", "remove", "kills", "reset", "info", "reload", "particles", "effects", "wings", "ability1", "cinematic"));
         } else if (args.length == 1 && (command.getName().equalsIgnoreCase("makeone")
                 || command.getName().equalsIgnoreCase("oneinfo"))) {
             Bukkit.getOnlinePlayers().forEach(player -> suggestions.add(player.getName()));

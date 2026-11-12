@@ -23,7 +23,7 @@ import java.util.UUID;
 public final class TheOnePlugin extends JavaPlugin implements Listener {
     private ProgressStore store;
     private AuraEngine auraEngine;
-    private WingsEngine wingsEngine;
+    private WingsEngine wingsEngine;\n    private HaloAbilityEngine haloAbilityEngine;
     private OneCommands commands;
     private UUID holder;
     private boolean effectsEnabled;
@@ -43,7 +43,7 @@ public final class TheOnePlugin extends JavaPlugin implements Listener {
         }
 
         auraEngine = new AuraEngine(this);
-        wingsEngine = new WingsEngine(this);
+        wingsEngine = new WingsEngine(this);\n        haloAbilityEngine = new HaloAbilityEngine(this);
         commands = new OneCommands(this);
         registerCommand("one");
         registerCommand("makeone");
@@ -180,6 +180,19 @@ public final class TheOnePlugin extends JavaPlugin implements Listener {
             player.sendMessage(Component.text("You are now ", NamedTextColor.GRAY)
                     .append(Component.text("THE ONE.", NamedTextColor.GOLD)));
             player.playSound(player.getLocation(), Sound.BLOCK_BEACON_POWER_SELECT, 1.0f, 1.0f);
+        }
+    }
+
+    public void castAbility(Player player) {
+        if (!isHolder(player)) {
+            player.sendMessage(Component.text("Only THE ONE can wield the halo.", NamedTextColor.RED));
+            return;
+        }
+        try {
+            haloAbilityEngine.cast(player, Stage.fromKills(getKills(player.getUniqueId())));
+        } catch (SQLException exception) {
+            player.sendMessage(Component.text("Your progression could not be loaded.", NamedTextColor.RED));
+            getLogger().warning("Could not read ability progression: " + exception.getMessage());
         }
     }
 
