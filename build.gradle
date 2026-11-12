@@ -1,0 +1,46 @@
+plugins {
+    id 'java'
+    id 'com.gradleup.shadow' version '8.3.6'
+}
+
+group = 'dev.mox'
+version = '1.0.0'
+
+java {
+    toolchain {
+        languageVersion = JavaLanguageVersion.of(21)
+    }
+}
+
+repositories {
+    mavenCentral()
+    maven { url = 'https://repo.papermc.io/repository/maven-public/' }
+}
+
+dependencies {
+    compileOnly 'io.papermc.paper:paper-api:1.21.11-R0.1-SNAPSHOT'
+    implementation 'org.xerial:sqlite-jdbc:3.50.3.0'
+    testImplementation 'org.junit.jupiter:junit-jupiter:5.12.2'
+}
+
+tasks.withType(JavaCompile).configureEach {
+    options.encoding = 'UTF-8'
+    options.release = 21
+}
+
+test {
+    useJUnitPlatform()
+}
+
+shadowJar {
+    archiveClassifier = ''
+    relocate 'org.sqlite', 'dev.mox.theone.lib.sqlite'
+}
+
+build {
+    dependsOn shadowJar
+}
+
+tasks.jar {
+    archiveClassifier = 'plain'
+}

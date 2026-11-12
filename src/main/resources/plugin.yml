@@ -1,0 +1,36 @@
+name: THE_ONE
+version: 1.0.0
+main: dev.mox.theone.TheOnePlugin
+api-version: '1.21.11'
+authors: [1273r]
+description: Persistent seven-stage evolution with a dynamic 3D orbital aura.
+website: https://github.com/1273r/the-one.
+
+commands:
+  one:
+    description: Manage THE ONE progression and visual effects.
+    usage: /one <set|remove|kills|reset|info|reload|effects>
+    aliases: [theone]
+  makeone:
+    description: Assign THE ONE to a player.
+    usage: /makeone <player>
+  removeone:
+    description: Remove THE ONE from its current holder.
+    usage: /removeone
+  forceprog:
+    description: Set your own THE ONE kill progression for testing.
+    usage: /forceprog <kills>
+  oneinfo:
+    description: Show THE ONE holder and stage information.
+    usage: /oneinfo
+  progress:
+    description: Show your THE ONE progression.
+    usage: /progress
+
+permissions:
+  theone.admin:
+    description: Manage THE ONE holders, progression, and settings.
+    default: op
+  theone.use:
+    description: View THE ONE progression.
+    default: true
