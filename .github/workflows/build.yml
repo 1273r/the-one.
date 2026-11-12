@@ -31,6 +31,14 @@ jobs:
         run: gradle clean test shadowJar
       - name: Verify plugin JAR exists
         run: test -s build/libs/the-one-paper-1.0.0.jar
+      - name: Upload test reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: THE-ONE-test-reports
+          path: build/reports/tests/test/
+          if-no-files-found: ignore
+          retention-days: 7
       - name: Upload server-ready plugin
         uses: actions/upload-artifact@v4
         with:
