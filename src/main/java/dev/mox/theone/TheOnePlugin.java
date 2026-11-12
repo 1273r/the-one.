@@ -185,6 +185,10 @@ public final class TheOnePlugin extends JavaPlugin implements Listener {
         }
     }
 
+    public void clearAbility(UUID playerId) {
+        if (haloAbilityEngine != null) haloAbilityEngine.clear(playerId);
+    }
+
     public boolean isHaloInFlight(UUID playerId) {
         return haloAbilityEngine != null && haloAbilityEngine.isInFlight(playerId);
     }
