@@ -56,9 +56,9 @@ public enum Stage {
     public org.bukkit.potion.PotionEffectType buff() {
         if (buffKey == null) return null;
         return switch (buffKey) {
-            case "speed" -> org.bukkit.potion."speed";
-            case "resistance" -> org.bukkit.potion."resistance";
-            case "strength" -> org.bukkit.potion."strength";
+            case "speed" -> org.bukkit.potion.PotionEffectType.SPEED;
+            case "resistance" -> org.bukkit.potion.PotionEffectType.RESISTANCE;
+            case "strength" -> org.bukkit.potion.PotionEffectType.STRENGTH;
             default -> null;
         };
     }
