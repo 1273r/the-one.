@@ -105,9 +105,19 @@ public final class TheOnePlugin extends JavaPlugin implements Listener {
     @EventHandler
     public void onJoin(PlayerJoinEvent event) {
         Player player = event.getPlayer();
-        if (holder != null && holder.equals(player.getUniqueId())) {
-            Bukkit.getScheduler().runTask(this, () -> auraEngine.refreshBuffs(player));
-        }
+        Bukkit.getScheduler().runTask(this, () -> {
+            // A holder may have been removed while offline. Finish the cleanup on login.
+            java.util.List<String> pending = getConfig().getStringList("cleanup.pending-players");
+            if (pending.remove(player.getUniqueId().toString())) {
+                removeManagedBuffs(player);
+                player.sendActionBar(Component.empty());
+                getConfig().set("cleanup.pending-players", pending);
+                saveConfig();
+            }
+            if (holder != null && holder.equals(player.getUniqueId())) {
+                auraEngine.refreshBuffs(player);
+            }
+        });
     }
 
     @EventHandler
@@ -138,12 +148,30 @@ public final class TheOnePlugin extends JavaPlugin implements Listener {
 
     public void setHolder(Player player) throws SQLException {
         UUID previousHolder = holder;
-        if (holder != null) {
-            Player previous = Bukkit.getPlayer(holder);
-            if (previous != null) removeManagedBuffs(previous);
+        UUID nextHolder = player == null ? null : player.getUniqueId();
+
+        // Persist first so a database failure never strips the current holder's powers.
+        store.setHolder(nextHolder);
+
+        if (previousHolder != null && !previousHolder.equals(nextHolder)) {
+            // Stop every running cinematic/temporary visual before releasing the holder.
+            if (auraEngine != null) auraEngine.clearAll();
+
+            java.util.List<String> pending = getConfig().getStringList("cleanup.pending-players");
+            if (!pending.contains(previousHolder.toString())) pending.add(previousHolder.toString());
+            getConfig().set("cleanup.pending-players", pending);
+
+            Player previous = Bukkit.getPlayer(previousHolder);
+            if (previous != null) {
+                removeManagedBuffs(previous);
+                previous.sendActionBar(Component.empty());
+                pending.remove(previousHolder.toString());
+                getConfig().set("cleanup.pending-players", pending);
+            }
+            saveConfig();
         }
-        holder = player == null ? null : player.getUniqueId();
-        store.setHolder(holder);
+
+        holder = nextHolder;
         if (player != null) {
             auraEngine.refreshBuffs(player);
             if (!player.getUniqueId().equals(previousHolder)) {
