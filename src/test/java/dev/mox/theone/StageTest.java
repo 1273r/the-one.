@@ -20,6 +20,14 @@ class StageTest {
     }
 
     @Test
+    void progressBarPercentageIsBoundedAndStageAware() {
+        assertEquals(0, Stage.AWAKENING.progressPercent(0));
+        assertEquals(50, Stage.AWAKENING.progressPercent(1));
+        assertEquals(100, Stage.THE_ONE.progressPercent(30));
+        assertEquals(100, Stage.THE_ONE.progressPercent(500));
+    }
+
+    @Test
     void stagesWithoutListedBuffsDoNotInventOne() {
         assertNull(Stage.DIVINE.buffKey());
         assertNull(Stage.THE_ONE.buffKey());
