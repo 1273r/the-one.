@@ -188,6 +188,7 @@ public final class TheOnePlugin extends JavaPlugin implements Listener {
 
     public void removeManagedBuffs(Player player) {
         for (Stage stage : Stage.values()) {
+            if (stage.buff() == null) continue;
             PotionEffect effect = player.getPotionEffect(stage.buff());
             if (effect != null && effect.getDuration() <= 120) player.removePotionEffect(stage.buff());
         }
