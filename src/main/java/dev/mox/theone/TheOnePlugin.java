@@ -219,6 +219,13 @@ public final class TheOnePlugin extends JavaPlugin implements Listener {
         saveConfig();
     }
 
+    public boolean toggleWings() {
+        boolean enabled = !getConfig().getBoolean("wings.enabled", true);
+        getConfig().set("wings.enabled", enabled);
+        saveConfig();
+        return enabled;
+    }
+
     public void reloadSettings() {
         reloadConfig();
         effectsEnabled = getConfig().getBoolean("visual.enabled", true);

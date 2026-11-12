@@ -17,7 +17,7 @@ visual:
   tilt-speed: 0.13
   inward-streams: true
   ring-highlights: true
-  core-particles: true
+  core-particles: false
   action-bar: true
   stage-title: true
   # Safety ceiling. The engine also scales ring detail with the active stage.
