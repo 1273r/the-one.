@@ -127,8 +127,10 @@ public final class AuraEngine {
 
 
     /**
-     * One-time cinematic made only from particles and sounds.
-     * No explosion entity is created and no blocks or entities are damaged.
+     * Cinematic ascension built around Paper's client-rendered trail particles.
+     * The sequence uses composed geometry and restrained colors instead of a cloud
+     * of isolated dust points. It is entirely visual: no explosion entity, damage,
+     * block edits, or knockback are created.
      */
     public void playAscension(Player player) {
         cancelAscension(true);
@@ -139,11 +141,12 @@ public final class AuraEngine {
         savedPitch = player.getLocation().getPitch();
         final int[] age = {0};
         final int[] emitted = {0};
-        final int budget = clamp(plugin.getConfig().getInt("transition.max-particles-per-tick", 850), 100, 3000);
+        final int budget = clamp(plugin.getConfig().getInt("transition.max-particles-per-tick", 1600), 200, 4000);
         final BukkitTask[] task = new BukkitTask[1];
 
-        player.playSound(player.getLocation(), Sound.BLOCK_BEACON_POWER_SELECT, 1.4f, 0.55f);
-        player.playSound(player.getLocation(), Sound.ENTITY_WARDEN_SONIC_BOOM, 0.8f, 0.7f);
+        Location start = player.getLocation();
+        player.playSound(start, Sound.BLOCK_BEACON_POWER_SELECT, 1.15f, 0.48f);
+        player.playSound(start, Sound.BLOCK_AMETHYST_BLOCK_CHIME, 0.9f, 0.62f);
 
         task[0] = Bukkit.getScheduler().runTaskTimer(plugin, () -> {
             if (!player.isOnline() || player.isDead() || !player.getUniqueId().equals(ascensionPlayer)) {
@@ -154,82 +157,46 @@ public final class AuraEngine {
 
             int t = age[0]++;
             emitted[0] = 0;
-            Location origin = player.getLocation().clone().add(0, 1.0, 0);
+            Location origin = player.getLocation().clone().add(0, 0.95, 0);
             World world = origin.getWorld();
             if (world == null) return;
 
-            // Paper has no native camera-shake API. A tiny temporary view rotation
-            // provides the impact, then restores the exact original view direction.
-            if (plugin.getConfig().getBoolean("transition.screen-shake", true) && t <= 22) {
-                float strength = (float) (1.0 - t / 23.0);
-                float yaw = (float) Math.sin(t * 2.35) * 1.45f * strength;
-                float pitch = (float) Math.cos(t * 1.85) * 1.15f * strength;
-                player.setRotation(savedYaw + yaw, clamp(savedPitch + pitch, -89.0f, 89.0f));
-            }
-
-            if (t <= 14) {
-                // Expanding spherical shockwave from the player's whole body.
-                double radius = 0.18 + t * 0.205;
-                for (int lat = 0; lat <= 6 && emitted[0] < budget; lat++) {
-                    double phi = Math.PI * lat / 6.0;
-                    for (int lon = 0; lon < 16 && emitted[0] < budget; lon++) {
-                        double theta = Math.PI * 2.0 * lon / 16.0 + t * 0.075;
-                        Location point = origin.clone().add(
-                                Math.sin(phi) * Math.cos(theta) * radius,
-                                Math.cos(phi) * radius,
-                                Math.sin(phi) * Math.sin(theta) * radius);
-                        transitionDust(world, point, palette((lat + lon + t) % 4), 1.35f, emitted, budget);
-                        if ((lon + lat) % 3 == 0) transitionParticle(world, Particle.ELECTRIC_SPARK, point, emitted, budget);
-                    }
+            if (t <= 23) {
+                // A three-layer seal assembles around the player's feet and waist.
+                drawAscensionSeal(origin, t, emitted, budget);
+                drawRisingEmbers(origin, t, emitted, budget);
+                if (t == 12) player.playSound(origin, Sound.BLOCK_BEACON_AMBIENT, 1.0f, 0.55f);
+            } else if (t <= 47) {
+                // The seal opens into six interwoven, rising strands.
+                drawAscensionHelix(origin, t - 24, emitted, budget);
+                drawVerticalLances(origin, t - 24, emitted, budget);
+                if (t == 24) player.playSound(origin, Sound.BLOCK_BEACON_ACTIVATE, 1.25f, 0.72f);
+            } else if (t <= 77) {
+                // All strands spiral inward, visibly feeding the core.
+                drawConvergence(origin, t - 48, emitted, budget);
+                if (t == 48) player.playSound(origin, Sound.ENTITY_WARDEN_SONIC_BOOM, 0.8f, 0.58f);
+                if (t == 66) player.playSound(origin, Sound.BLOCK_AMETHYST_BLOCK_CHIME, 1.2f, 1.35f);
+            } else if (t <= 90) {
+                // A clean expanding spherical shockwave and ground-level ring.
+                drawAscensionDetonation(origin, t - 78, emitted, budget);
+                if (plugin.getConfig().getBoolean("transition.screen-shake", true) && t <= 80) {
+                    float impulse = t == 78 ? 0.42f : -0.22f;
+                    player.setRotation(savedYaw + impulse, clamp(savedPitch - impulse * 0.55f, -89.0f, 89.0f));
+                } else if (t == 81) {
+                    player.setRotation(savedYaw, savedPitch);
                 }
-                if (t == 0) {
-                    player.playSound(origin, Sound.BLOCK_BEACON_ACTIVATE, 1.5f, 0.65f);
-                    player.playSound(origin, Sound.ENTITY_PLAYER_LEVELUP, 1.2f, 0.5f);
-                }
-            } else if (t <= 48) {
-                // Six colored helices orbit rapidly, then collapse into the player.
-                double progress = (t - 15) / 33.0;
-                double radius = 3.25 * (1.0 - progress) + 0.12;
-                double spin = t * 0.31;
-                for (int stream = 0; stream < 6 && emitted[0] < budget; stream++) {
-                    double phase = stream * Math.PI / 3.0;
-                    for (int segment = 0; segment < 8 && emitted[0] < budget; segment++) {
-                        double along = segment / 7.0;
-                        double angle = phase + spin + along * Math.PI * 1.55;
-                        double localRadius = radius * (1.0 - along * 0.22);
-                        double y = Math.sin(angle * 1.4 + stream) * (0.35 + localRadius * 0.17);
-                        Location point = origin.clone().add(
-                                Math.cos(angle) * localRadius, y, Math.sin(angle) * localRadius);
-                        transitionDust(world, point, palette((stream + segment + t / 3) % 4), 1.2f, emitted, budget);
-                        if (segment % 2 == 0) transitionParticle(world, Particle.END_ROD, point, emitted, budget);
-                    }
-                }
-                if (t == 15) player.playSound(origin, Sound.BLOCK_AMETHYST_BLOCK_CHIME, 1.4f, 0.6f);
-                if (t == 36) player.playSound(origin, Sound.BLOCK_BEACON_AMBIENT, 1.2f, 0.8f);
-            } else if (t <= 55) {
-                // Huge spherical visual detonation; intentionally no explosive entity.
-                double radius = 0.25 + (t - 49) * 0.48;
-                for (int lat = 0; lat <= 5 && emitted[0] < budget; lat++) {
-                    double phi = Math.PI * lat / 5.0;
-                    for (int lon = 0; lon < 18 && emitted[0] < budget; lon++) {
-                        double theta = Math.PI * 2.0 * lon / 18.0 + t * 0.045;
-                        Location point = origin.clone().add(
-                                Math.sin(phi) * Math.cos(theta) * radius,
-                                Math.cos(phi) * radius,
-                                Math.sin(phi) * Math.sin(theta) * radius);
-                        transitionDust(world, point, palette((lat + lon + t) % 4), 1.65f, emitted, budget);
-                        if (lon % 2 == 0) transitionParticle(world, Particle.FIREWORK, point, emitted, budget);
-                    }
-                }
-                if (t == 49) {
-                    world.spawnParticle(Particle.FLASH, origin, 1, 0, 0, 0, 0);
+                if (t == 78) {
+                    world.spawnParticle(Particle.FLASH, origin, 1, 0, 0, 0, 0, Color.WHITE);
                     world.spawnParticle(Particle.EXPLOSION_EMITTER, origin, 1, 0, 0, 0, 0);
-                    player.playSound(origin, Sound.ENTITY_GENERIC_EXPLODE, 1.7f, 0.72f);
-                    player.playSound(origin, Sound.ENTITY_WARDEN_SONIC_BOOM, 1.2f, 1.05f);
+                    player.playSound(origin, Sound.ENTITY_GENERIC_EXPLODE, 1.35f, 0.66f);
+                    player.playSound(origin, Sound.ENTITY_WARDEN_SONIC_BOOM, 1.15f, 0.92f);
                 }
+            } else if (t <= 112) {
+                // The blast resolves into three slowly turning halos and falling ash.
+                drawAscensionAfterglow(origin, t - 91, emitted, budget);
             }
 
-            if (t >= 56) {
+            if (t >= 113) {
                 player.setRotation(savedYaw, savedPitch);
                 task[0].cancel();
                 if (ascensionTask == task[0]) ascensionTask = null;
@@ -237,6 +204,173 @@ public final class AuraEngine {
             }
         }, 0L, 1L);
         ascensionTask = task[0];
+    }
+
+    private void drawAscensionSeal(Location origin, int tick, int[] emitted, int budget) {
+        World world = origin.getWorld();
+        Color[] colors = {Color.fromRGB(255, 218, 130), Color.fromRGB(115, 235, 255), Color.fromRGB(224, 239, 255)};
+        for (int ring = 0; ring < 3 && emitted[0] < budget; ring++) {
+            double radius = 1.15 + ring * 0.88;
+            double y = -0.72 + ring * 0.66;
+            double rotation = tick * (ring % 2 == 0 ? 0.105 : -0.082) + ring * 0.6;
+            int segments = 28;
+            for (int i = 0; i < segments && emitted[0] < budget; i++) {
+                double a = Math.PI * 2.0 * i / segments + rotation;
+                double b = Math.PI * 2.0 * (i + 1) / segments + rotation;
+                Location from = origin.clone().add(Math.cos(a) * radius, y, Math.sin(a) * radius);
+                Location to = origin.clone().add(Math.cos(b) * radius, y, Math.sin(b) * radius);
+                trail(world, from, to, colors[ring], 9, emitted, budget);
+                if (i % 7 == 0) particle(world, Particle.ELECTRIC_SPARK, from, emitted, budget);
+            }
+        }
+        // Four cardinal marks give the geometry a deliberate ritual-like silhouette.
+        for (int i = 0; i < 4 && emitted[0] < budget; i++) {
+            double a = tick * 0.055 + i * Math.PI / 2.0;
+            Location mark = origin.clone().add(Math.cos(a) * 2.05, -0.05, Math.sin(a) * 2.05);
+            particle(world, Particle.SOUL_FIRE_FLAME, mark, emitted, budget);
+        }
+    }
+
+    private void drawRisingEmbers(Location origin, int tick, int[] emitted, int budget) {
+        World world = origin.getWorld();
+        for (int i = 0; i < 10 && emitted[0] < budget; i++) {
+            double angle = i * Math.PI * 2.0 / 10.0 + tick * 0.17;
+            double radius = 1.35 + (i % 3) * 0.42;
+            double y = -0.9 + Math.floorMod(tick * 2 + i * 5, 30) * 0.075;
+            Location from = origin.clone().add(Math.cos(angle) * radius, y, Math.sin(angle) * radius);
+            Location to = from.clone().add(Math.cos(angle) * 0.12, 0.38, Math.sin(angle) * 0.12);
+            trail(world, from, to, i % 2 == 0 ? Color.fromRGB(255, 205, 105) : Color.fromRGB(105, 225, 255),
+                    12, emitted, budget);
+        }
+    }
+
+    private void drawAscensionHelix(Location origin, int tick, int[] emitted, int budget) {
+        World world = origin.getWorld();
+        Color[] colors = {Color.fromRGB(255, 224, 155), Color.fromRGB(115, 225, 255), Color.fromRGB(215, 235, 255)};
+        for (int strand = 0; strand < 6 && emitted[0] < budget; strand++) {
+            double phase = strand * Math.PI / 3.0;
+            for (int segment = 0; segment < 5 && emitted[0] < budget; segment++) {
+                double u = segment / 5.0;
+                double a = tick * 0.22 + phase + u * Math.PI * 1.65;
+                double y = -1.15 + u * 3.9;
+                double radius = 2.5 - u * 0.48;
+                Location from = origin.clone().add(Math.cos(a) * radius, y, Math.sin(a) * radius);
+                double nextA = a + 0.19;
+                Location to = origin.clone().add(Math.cos(nextA) * radius, y + 0.16, Math.sin(nextA) * radius);
+                trail(world, from, to, colors[strand % colors.length], 12, emitted, budget);
+            }
+        }
+        // A thin vertical axis makes the rising helix read as one coherent column.
+        if (tick % 2 == 0) {
+            for (int i = 0; i < 5 && emitted[0] < budget; i++) {
+                Location p = origin.clone().add(0, -1.3 + i * 0.72, 0);
+                particle(world, Particle.END_ROD, p, emitted, budget);
+            }
+        }
+    }
+
+    private void drawVerticalLances(Location origin, int tick, int[] emitted, int budget) {
+        World world = origin.getWorld();
+        for (int i = 0; i < 4 && emitted[0] < budget; i++) {
+            double a = i * Math.PI / 2.0 + tick * 0.035;
+            double x = Math.cos(a) * 2.0;
+            double z = Math.sin(a) * 2.0;
+            Location from = origin.clone().add(x, -1.15, z);
+            Location to = origin.clone().add(x * 0.42, 2.2, z * 0.42);
+            trail(world, from, to, Color.fromRGB(105, 220, 255), 10, emitted, budget);
+        }
+    }
+
+    private void drawConvergence(Location origin, int tick, int[] emitted, int budget) {
+        World world = origin.getWorld();
+        double progress = tick / 29.0;
+        double spin = tick * 0.27;
+        for (int strand = 0; strand < 8 && emitted[0] < budget; strand++) {
+            double phase = strand * Math.PI / 4.0 + spin;
+            for (int segment = 0; segment < 5 && emitted[0] < budget; segment++) {
+                double along = segment / 5.0;
+                double radius = (3.9 * (1.0 - progress) + 0.18) * (1.0 - along * 0.13);
+                double angle = phase + along * Math.PI * 1.3;
+                double y = Math.sin(angle * 1.5 + strand) * (0.7 * (1.0 - progress));
+                Location from = origin.clone().add(Math.cos(angle) * radius, y, Math.sin(angle) * radius);
+                double nextRadius = Math.max(0.08, radius - 0.24);
+                Location to = origin.clone().add(Math.cos(angle + 0.2) * nextRadius, y * 0.78, Math.sin(angle + 0.2) * nextRadius);
+                Color color = strand % 3 == 0 ? Color.fromRGB(255, 221, 145)
+                        : strand % 3 == 1 ? Color.fromRGB(110, 226, 255) : Color.fromRGB(235, 244, 255);
+                trail(world, from, to, color, 11, emitted, budget);
+            }
+        }
+        if (tick % 3 == 0) {
+            particle(world, Particle.SCULK_SOUL, origin.clone().add(0, 0.1, 0), emitted, budget);
+        }
+    }
+
+    private void drawAscensionDetonation(Location origin, int tick, int[] emitted, int budget) {
+        World world = origin.getWorld();
+        double radius = 0.35 + tick * 0.42;
+        for (int layer = 0; layer < 2 && emitted[0] < budget; layer++) {
+            double layerRadius = radius * (layer == 0 ? 1.0 : 0.68);
+            double yScale = layer == 0 ? 0.82 : 1.22;
+            int segments = 40;
+            for (int i = 0; i < segments && emitted[0] < budget; i++) {
+                double a = Math.PI * 2.0 * i / segments + tick * 0.035 + layer * 0.18;
+                double b = Math.PI * 2.0 * (i + 1) / segments + tick * 0.035 + layer * 0.18;
+                Location from = origin.clone().add(Math.cos(a) * layerRadius, Math.sin(a) * layerRadius * yScale,
+                        Math.sin(a) * layerRadius);
+                Location to = origin.clone().add(Math.cos(b) * (layerRadius + 0.24),
+                        Math.sin(b) * (layerRadius + 0.24) * yScale, Math.sin(b) * (layerRadius + 0.24));
+                trail(world, from, to, layer == 0 ? Color.fromRGB(255, 226, 160) : Color.fromRGB(120, 224, 255),
+                        13, emitted, budget);
+            }
+        }
+        // A broad ground ring adds scale without touching the terrain.
+        double groundRadius = 1.0 + tick * 0.48;
+        for (int i = 0; i < 32 && emitted[0] < budget; i++) {
+            double a = Math.PI * 2.0 * i / 32.0 + tick * 0.025;
+            Location from = origin.clone().add(Math.cos(a) * groundRadius, -0.82, Math.sin(a) * groundRadius);
+            Location to = origin.clone().add(Math.cos(a + 0.14) * (groundRadius + 0.3), -0.82,
+                    Math.sin(a + 0.14) * (groundRadius + 0.3));
+            trail(world, from, to, Color.fromRGB(255, 192, 100), 9, emitted, budget);
+        }
+        if (tick % 2 == 0) {
+            particle(world, Particle.FIREWORK, origin.clone().add(0, 0.4, 0), emitted, budget);
+        }
+    }
+
+    private void drawAscensionAfterglow(Location origin, int tick, int[] emitted, int budget) {
+        World world = origin.getWorld();
+        for (int ring = 0; ring < 3 && emitted[0] < budget; ring++) {
+            double radius = 1.25 + ring * 0.72;
+            double y = 0.25 + ring * 0.68;
+            double rotation = tick * (ring == 1 ? -0.045 : 0.035) + ring;
+            for (int i = 0; i < 18 && emitted[0] < budget; i++) {
+                double a = Math.PI * 2.0 * i / 18.0 + rotation;
+                double b = Math.PI * 2.0 * (i + 1) / 18.0 + rotation;
+                Location from = origin.clone().add(Math.cos(a) * radius, y, Math.sin(a) * radius);
+                Location to = origin.clone().add(Math.cos(b) * radius, y, Math.sin(b) * radius);
+                trail(world, from, to, ring == 1 ? Color.fromRGB(120, 225, 255)
+                        : Color.fromRGB(255, 225, 160), 18, emitted, budget);
+            }
+        }
+        for (int i = 0; i < 8 && emitted[0] < budget; i++) {
+            double a = i * Math.PI / 4.0 + tick * 0.09;
+            Location ash = origin.clone().add(Math.cos(a) * 1.5, 2.2 + (i % 3) * 0.35, Math.sin(a) * 1.5);
+            particle(world, Particle.WHITE_ASH, ash, emitted, budget);
+        }
+    }
+
+    private void trail(World world, Location from, Location to, Color color, int duration,
+                       int[] emitted, int budget) {
+        if (emitted[0] >= budget) return;
+        world.spawnParticle(Particle.TRAIL, from, 1, 0, 0, 0, 0,
+                new Particle.Trail(to, color, duration));
+        emitted[0]++;
+    }
+
+    private void particle(World world, Particle particle, Location location, int[] emitted, int budget) {
+        if (emitted[0] >= budget) return;
+        world.spawnParticle(particle, location, 1, 0, 0, 0, 0);
+        emitted[0]++;
     }
 
     private void cancelAscension(boolean restoreView) {
