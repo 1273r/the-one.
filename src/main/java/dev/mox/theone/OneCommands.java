@@ -32,7 +32,7 @@ public final class OneCommands implements CommandExecutor, TabCompleter {
         if (!hasAdmin(sender)) return noPermission(sender);
 
         if (args.length == 0) {
-            sender.sendMessage(Component.text("/one set <player> | remove | kills <amount> [player] | reset <player> | info [player] | reload | effects",
+            sender.sendMessage(Component.text("/one set <player> | remove | kills <amount> [player] | reset <player> | info [player] | reload | effects | cinematic [player]",
                     NamedTextColor.AQUA));
             return true;
         }
@@ -46,6 +46,16 @@ public final class OneCommands implements CommandExecutor, TabCompleter {
             case "reload" -> {
                 plugin.reloadSettings();
                 sender.sendMessage(Component.text("THE ONE configuration reloaded.", NamedTextColor.GREEN));
+            }
+            case "cinematic" -> {
+                Player target = args.length >= 2 ? Bukkit.getPlayerExact(args[1])
+                        : (sender instanceof Player player ? player : null);
+                if (target == null) {
+                    sender.sendMessage(Component.text("Usage: /one cinematic [online-player]", NamedTextColor.RED));
+                    break;
+                }
+                plugin.playAscension(target);
+                sender.sendMessage(Component.text("Played THE ONE ascension cinematic for " + target.getName() + ".", NamedTextColor.GREEN));
             }
             case "effects" -> {
                 plugin.toggleEffects();
@@ -235,14 +245,14 @@ public final class OneCommands implements CommandExecutor, TabCompleter {
     public List<String> onTabComplete(CommandSender sender, Command command, String alias, String[] args) {
         List<String> suggestions = new ArrayList<>();
         if (args.length == 1 && command.getName().equalsIgnoreCase("one")) {
-            suggestions.addAll(List.of("set", "remove", "kills", "reset", "info", "reload", "effects"));
+            suggestions.addAll(List.of("set", "remove", "kills", "reset", "info", "reload", "effects", "cinematic"));
         } else if (args.length == 1 && (command.getName().equalsIgnoreCase("makeone")
                 || command.getName().equalsIgnoreCase("oneinfo"))) {
             Bukkit.getOnlinePlayers().forEach(player -> suggestions.add(player.getName()));
         } else if (args.length == 1 && command.getName().equalsIgnoreCase("forceprog")) {
             suggestions.addAll(List.of("0", "2", "5", "10", "15", "20", "30"));
         } else if (args.length == 2 && command.getName().equalsIgnoreCase("one")
-                && List.of("set", "reset", "info").contains(args[0].toLowerCase())) {
+                && List.of("set", "reset", "info", "cinematic").contains(args[0].toLowerCase())) {
             Bukkit.getOnlinePlayers().forEach(player -> suggestions.add(player.getName()));
         } else if (args.length == 3 && command.getName().equalsIgnoreCase("one")
                 && args[0].equalsIgnoreCase("kills")) {
