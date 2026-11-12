@@ -33,3 +33,10 @@ audio:
   enabled: true
   progression-volume: 0.8
 
+
+# One-time cinematic played when a new player is assigned as THE ONE.
+# Cosmetic particles and sounds only: no explosion entity, damage, or block changes.
+transition:
+  enabled: true
+  screen-shake: true
+  max-particles-per-tick: 850
