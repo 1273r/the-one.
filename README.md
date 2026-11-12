@@ -79,3 +79,10 @@ The renderer only runs for the active online holder, uses a configurable particl
 ## Data and privacy
 
 The SQLite database stores player UUIDs, kill counts, and the current holder UUID. No external service or telemetry is used.
+
+
+## Becoming THE ONE: ascension cinematic
+
+When an administrator assigns a new holder with `/makeone` or `/one set`, the player receives a one-time cinematic: an expanding particle shell, a brief camera impulse, six spiraling streams converging into the player, and a final visual detonation with sound. The detonation is cosmetic only: it does not create an explosion entity, damage entities, or alter blocks.
+
+Configure it under `transition` in `plugins/THE_ONE/config.yml`. Set `transition.screen-shake: false` to disable the temporary view rotation, or `transition.enabled: false` to disable the sequence.
