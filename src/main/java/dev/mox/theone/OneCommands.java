@@ -63,7 +63,12 @@ public final class OneCommands implements CommandExecutor, TabCompleter {
                         (plugin.effectsEnabled() ? "enabled." : "disabled."),
                         plugin.effectsEnabled() ? NamedTextColor.GREEN : NamedTextColor.YELLOW));
             }
-            case "wings" -> {\n                boolean enabled = plugin.toggleWings();\n                sender.sendMessage(Component.text("THE ONE wings " + (enabled ? "enabled." : "disabled."),\n                        enabled ? NamedTextColor.GREEN : NamedTextColor.YELLOW));\n            }\n            default -> sender.sendMessage(Component.text("Unknown subcommand. Use /one for help.", NamedTextColor.RED));
+            case "wings" -> {
+                boolean enabled = plugin.toggleWings();
+                sender.sendMessage(Component.text("THE ONE wings " + (enabled ? "enabled." : "disabled."),
+                        enabled ? NamedTextColor.GREEN : NamedTextColor.YELLOW));
+            }
+            default -> sender.sendMessage(Component.text("Unknown subcommand. Use /one for help.", NamedTextColor.RED));
         }
         return true;
     }
