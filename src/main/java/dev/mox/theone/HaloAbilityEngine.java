@@ -86,7 +86,7 @@ public final class HaloAbilityEngine {
                 return;
             }
 
-            drawProjectile(world, position, primary, age[0]++);
+            drawProjectile(world, position, primary, age[0]++, right, up);
             for (LivingEntity target : world.getNearbyLivingEntities(position, 1.0, 1.0, 1.0)) {
                 if (target.equals(caster) || target.isDead()) continue;
                 if (target instanceof Player other && other.getGameMode() == org.bukkit.GameMode.SPECTATOR) continue;
@@ -121,20 +121,16 @@ public final class HaloAbilityEngine {
         cooldowns.clear();
     }
 
-    private void drawProjectile(World world, Location center, Color color, int age) {
+    private void drawProjectile(World world, Location center, Color color, int age, Vector right, Vector up) {
         double rotation = age * 0.32;
         for (int i = 0; i < 32; i++) {
             double angle = Math.PI * 2.0 * i / 32.0 + rotation;
-            Vector offset = rightVector(center, angle, 0.46);
+            Vector offset = right.clone().multiply(Math.cos(angle) * 0.46)
+                    .add(up.clone().multiply(Math.sin(angle) * 0.46));
             world.spawnParticle(Particle.DUST, center.clone().add(offset), 1, 0, 0, 0, 0,
                     new Particle.DustOptions(color, 1.65f));
         }
         world.spawnParticle(Particle.END_ROD, center, 1, 0, 0, 0, 0);
-    }
-
-    private Vector rightVector(Location ignored, double angle, double radius) {
-        // The projectile's visible rim is a compact vertical disc perpendicular to travel.
-        return new Vector(Math.cos(angle) * radius, Math.sin(angle) * radius, 0);
     }
 
     private void drawImpact(World world, Location at, Color color) {

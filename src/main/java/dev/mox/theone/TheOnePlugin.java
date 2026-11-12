@@ -125,6 +125,7 @@ public final class TheOnePlugin extends JavaPlugin implements Listener {
     @EventHandler
     public void onQuit(PlayerQuitEvent event) {
         if (auraEngine != null) auraEngine.forget(event.getPlayer().getUniqueId());
+        if (haloAbilityEngine != null) haloAbilityEngine.clear(event.getPlayer().getUniqueId());
     }
 
     private void announceEvolution(Player player, Stage stage, int kills) {
@@ -156,6 +157,7 @@ public final class TheOnePlugin extends JavaPlugin implements Listener {
         store.setHolder(nextHolder);
 
         if (previousHolder != null && !previousHolder.equals(nextHolder)) {
+            if (haloAbilityEngine != null) haloAbilityEngine.clear(previousHolder);
             // Stop every running cinematic/temporary visual before releasing the holder.
             if (auraEngine != null) auraEngine.clearAll();
 
