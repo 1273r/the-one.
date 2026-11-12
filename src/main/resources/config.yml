@@ -41,3 +41,8 @@ transition:
   screen-shake: true
   # Trail particles form continuous geometry; this is a hard per-tick safety ceiling.
   max-particles-per-tick: 1600
+
+
+# Cosmetic wings for the current THE ONE holder. They only flap; no flight or gameplay effects.
+wings:
+  enabled: true

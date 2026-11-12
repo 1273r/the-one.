@@ -23,6 +23,7 @@ import java.util.UUID;
 public final class TheOnePlugin extends JavaPlugin implements Listener {
     private ProgressStore store;
     private AuraEngine auraEngine;
+    private WingsEngine wingsEngine;
     private OneCommands commands;
     private UUID holder;
     private boolean effectsEnabled;
@@ -42,6 +43,7 @@ public final class TheOnePlugin extends JavaPlugin implements Listener {
         }
 
         auraEngine = new AuraEngine(this);
+        wingsEngine = new WingsEngine(this);
         commands = new OneCommands(this);
         registerCommand("one");
         registerCommand("makeone");
@@ -51,6 +53,7 @@ public final class TheOnePlugin extends JavaPlugin implements Listener {
         registerCommand("progress");
         getServer().getPluginManager().registerEvents(this, this);
         Bukkit.getScheduler().runTaskTimer(this, auraEngine::tick, 1L, 3L);
+        Bukkit.getScheduler().runTaskTimer(this, wingsEngine::tick, 2L, 3L);
 
         if (holder != null) {
             Player current = Bukkit.getPlayer(holder);
